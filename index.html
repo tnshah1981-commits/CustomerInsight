@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Customer Insight Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#E9EDF2; --surface:#FFFFFF; --surface-2:#F4F6F9; --ink:#18212F; --muted:#5B6678; --line:#D3D9E2;
+  --cobalt:#2B47B9; --cobalt-soft:#E3E8FA; --mark:#FFE46B; --good:#23764F; --warn:#B7791F; --bad:#BE3A33;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Instrument Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161E; --surface:#1A212C; --surface-2:#212A37; --ink:#E5EAF1; --muted:#98A3B5; --line:#2E3847;
+    --cobalt:#8EA2FF; --cobalt-soft:#26305A; --mark:rgba(255,228,107,.30); --good:#5BC58E; --warn:#E5B456; --bad:#F07A70;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161E; --surface:#1A212C; --surface-2:#212A37; --ink:#E5EAF1; --muted:#98A3B5; --line:#2E3847;
+  --cobalt:#8EA2FF; --cobalt-soft:#26305A; --mark:rgba(255,228,107,.30); --good:#5BC58E; --warn:#E5B456; --bad:#F07A70;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--cobalt);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1320px;margin:0 auto;padding:28px 20px 60px;display:grid;grid-template-columns:minmax(0,420px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:960px){.wrap{grid-template-columns:1fr;padding:18px 14px 48px}}
+
+/* Input panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:22px;position:sticky;top:calc(16px + env(safe-area-inset-top,0px))}
+@media (max-width:960px){.panel{position:static}}
+.brand{font-family:var(--display);font-weight:800;font-size:1.65rem;line-height:1.1;letter-spacing:-.02em;margin:0 0 6px}
+.lede{color:var(--muted);margin:0 0 20px;font-size:.95rem}
+.field{margin-bottom:14px}
+.field label{display:block;font-weight:600;font-size:.88rem;margin-bottom:5px}
+.field .hint{font-weight:400;color:var(--muted)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+input[type=text],select,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+textarea{resize:vertical;line-height:1.5}
+#notes{min-height:220px}
+#seller{min-height:72px;font-size:.9rem}
+.tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.link{background:none;border:0;padding:2px 0;color:var(--cobalt);font-weight:600;font-size:.86rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.count{margin-left:auto;color:var(--muted);font-size:.82rem}
+.actions{display:flex;gap:10px;margin-top:18px}
+.btn{border:0;border-radius:9px;padding:11px 18px;font-weight:600;cursor:pointer}
+.btn-primary{background:var(--cobalt);color:#fff;flex:1}
+:root[data-theme="dark"] .btn-primary{color:#0E1424}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn-primary{color:#0E1424}}
+.btn-primary:disabled{opacity:.55;cursor:default}
+.btn-ghost{background:var(--surface-2);border:1px solid var(--line)}
+details.more summary{cursor:pointer;font-weight:600;font-size:.88rem;color:var(--muted);margin:4px 0 10px}
+
+/* History */
+.history{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+.history h2{font:700 .95rem var(--display);margin:0 0 8px}
+.history ul{list-style:none;margin:0;padding:0;max-height:220px;overflow:auto}
+.history li button{width:100%;text-align:left;background:none;border:0;padding:8px 6px;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;gap:10px}
+.history li button:hover{background:var(--surface-2)}
+.history small{color:var(--muted)}
+.history .empty{color:var(--muted);font-size:.88rem}
+
+/* Report */
+.report{min-width:0}
+.blank{border:2px dashed var(--line);border-radius:14px;padding:48px 28px;color:var(--muted);text-align:left}
+.blank h2{font:800 1.9rem/1.15 var(--display);color:var(--ink);margin:0 0 10px;letter-spacing:-.02em;max-width:22ch}
+.blank p{max-width:58ch;margin:0 0 10px}
+.status{display:flex;align-items:center;gap:14px;padding:22px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.pulse{width:12px;height:12px;border-radius:50%;background:var(--cobalt);animation:pulse 1.2s infinite ease-in-out}
+@keyframes pulse{50%{transform:scale(.55);opacity:.4}}
+@media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+.err{border-left:4px solid var(--bad);background:var(--surface);padding:16px 18px;border-radius:8px}
+
+.dossier{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.head{padding:26px 28px 22px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+@media (max-width:620px){.head{grid-template-columns:1fr;padding:20px}}
+.head h2{font:800 clamp(1.7rem,3.2vw,2.5rem)/1.05 var(--display);letter-spacing:-.025em;margin:0 0 6px}
+.meta{color:var(--muted);font-size:.9rem;margin:0 0 12px}
+.summary{margin:0;max-width:68ch;font-size:1.04rem}
+.gauge{display:flex;gap:18px;align-items:center}
+.ring{position:relative;width:118px;height:118px}
+.ring svg{transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.ring .num b{font:800 2rem/1 var(--display)}
+.ring .num span{font-size:.75rem;color:var(--muted)}
+.sent{min-width:150px}
+.sent .lbl{font-size:.82rem;color:var(--muted)}
+.sent .val{font:700 1.05rem var(--display)}
+.track{position:relative;height:8px;border-radius:4px;margin:8px 0 4px;background:linear-gradient(90deg,var(--bad),var(--warn) 50%,var(--good))}
+.track i{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:var(--ink);transform:translateX(-50%)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;padding:12px 28px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+@media (max-width:620px){.toolbar{padding:10px 20px}}
+.toolbar .btn{padding:7px 12px;font-size:.86rem}
+
+.sec{display:grid;grid-template-columns:170px 1fr;gap:20px;padding:22px 28px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+@media (max-width:760px){.sec{grid-template-columns:1fr;gap:8px;padding:18px 20px}}
+.sec h3{font:700 1.02rem/1.3 var(--display);margin:2px 0 0}
+.sec h3 small{display:block;font:400 .8rem var(--body);color:var(--muted);margin-top:3px}
+.items{display:flex;flex-direction:column;gap:14px;min-width:0}
+.item{min-width:0}
+.item .t{font-weight:600;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.item p{margin:2px 0 0;color:var(--muted);max-width:72ch}
+.ev{display:inline;margin-top:4px;font-style:italic;background:linear-gradient(transparent 12%,var(--mark) 12%,var(--mark) 88%,transparent 88%);padding:0 3px;-webkit-box-decoration-break:clone;box-decoration-break:clone;color:var(--ink)}
+.evline{margin-top:5px;max-width:72ch}
+.tag{font:600 .74rem var(--body);padding:1px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.high,.blocker,.skeptic{color:var(--bad)} .medium,.neutral,.moderate{color:var(--warn)} .low,.champion,.supporter,.strong{color:var(--good)} .unknown,.exploratory{color:var(--muted)}
+ol.steps{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:12px}
+ol.steps li::marker{font:700 1rem var(--display);color:var(--cobalt)}
+.when{font-size:.84rem;color:var(--cobalt);font-weight:600}
+ul.plain{margin:0;padding-left:1.15em;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.person{border:1px solid var(--line);border-radius:10px;padding:12px}
+.person .nm{font-weight:600}
+.person .rl{font-size:.85rem;color:var(--muted)}
+.person p{margin:6px 0 0;font-size:.88rem}
+.note{color:var(--muted);font-size:.85rem;margin-top:10px}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:8px;font-size:.9rem;opacity:0;pointer-events:none;transition:opacity .2s}
+.toast.on{opacity:1}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside class="panel" aria-label="Customer input">
+    <h1 class="brand">Customer insight generator</h1>
+    <p class="lede">Paste call notes, emails, tickets or feedback for one account. Get pain points, risks, buying signals and the next moves.</p>
+
+    <div class="row2">
+      <div class="field"><label for="cust">Customer</label><input type="text" id="cust" placeholder="e.g. Northgate Estates"></div>
+      <div class="field"><label for="industry">Industry</label><input type="text" id="industry" placeholder="e.g. Property / FM"></div>
+    </div>
+    <div class="field">
+      <label for="focus">What do you need?</label>
+      <select id="focus">
+        <option value="account review">Full account review</option>
+        <option value="pre-meeting brief">Brief me before a meeting</option>
+        <option value="renewal and churn risk">Renewal and churn risk</option>
+        <option value="upsell and cross-sell discovery">Upsell and cross-sell ideas</option>
+        <option value="new prospect qualification">Qualify a new prospect</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="notes">Customer material</label>
+      <textarea id="notes" placeholder="Meeting notes, email threads, support tickets, survey answers, CRM notes…"></textarea>
+      <div class="tools">
+        <button class="link" id="importBtn" type="button">Import .txt / .csv / .md</button>
+        <button class="link" id="sampleBtn" type="button">Try sample data</button>
+        <span class="count" id="count">0 words</span>
+        <input type="file" id="file" class="vh" accept=".txt,.csv,.md,.json,.eml,text/*" multiple tabindex="-1">
+      </div>
+    </div>
+    <details class="more">
+      <summary>Your offering (shapes the opportunities)</summary>
+      <div class="field"><label for="seller" class="vh">Your offering</label>
+        <textarea id="seller">iPath Infotech: IT services (custom software engineering, BPO/KPO support) and DigitizeFM, a multi-tenant CAFM SaaS platform for facilities management (planned maintenance, helpdesk, assets, compliance). ISO 27001 certified, serving UK enterprise clients.</textarea>
+      </div>
+    </details>
+    <div class="actions">
+      <button class="btn btn-primary" id="runBtn" type="button">Generate insights</button>
+      <button class="btn btn-ghost" id="stopBtn" type="button" hidden>Stop</button>
+    </div>
+
+    <section class="history" id="historyBox" hidden aria-label="Saved insights">
+      <h2>Saved insights</h2>
+      <ul id="historyList"></ul>
+    </section>
+  </aside>
+
+  <main class="report" id="report" aria-live="polite">
+    <div class="blank">
+      <h2>Turn scattered notes into a clear read on the account.</h2>
+      <p>Add whatever you have on a customer: a QBR transcript, a frustrated email, a ticket export. The more raw material, the sharper the read.</p>
+      <p>Every pain point and risk comes with the line from your notes that backs it up, highlighted, so you can check it before you act on it.</p>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const arr = a => Array.isArray(a) ? a : [];
+let sample = null, db = null, userId = null, downloads = null, ctl = null, current = null;
+
+const SAMPLE = {
+  cust: "Northgate Estates Group", industry: "Commercial property / FM",
+  notes: `QBR call – 12 Sept (Priya Malhotra, Head of FM Operations; Dan Fletcher, IT Manager; Joanne Reid, Finance Director joined for last 15 min)
+
+Priya: "Our PPM schedule lives in three spreadsheets and the current CAFM. Nobody trusts the numbers." Said statutory compliance reporting for fire and water hygiene takes her team two days every month. Audit in January – she's nervous.
+Helpdesk volume up ~30% since they took on 14 new retail sites in the North West. Contractors don't update jobs in the system, so tenants chase by phone.
+Dan: current CAFM contract renews end of March. Wants SSO and an API to push data into their Power BI. "Last vendor promised an API for two years."
+Joanne: budget is tight, board wants headcount flat. Asked whether any of the helpdesk triage could be outsourced. Wants a business case before Christmas.
+Priya mentioned their sister company (Northgate Living, residential) has the same problems.
+
+Email from Dan – 19 Sept:
+"Can you send your ISO 27001 cert and pen test summary? Also, our security team needs to know where data is hosted. Not committing to anything yet."
+
+Support ticket export (current vendor, per Priya):
+- #4411 Mobile app crashes when contractors upload photos – open 6 weeks
+- #4502 Monthly compliance report times out
+- #4519 Duplicate assets after import
+
+Note from our account manager: Priya was very warm, Joanne sceptical about switching costs and data migration risk.`
+};
+
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
+function updateCount(){ const n=$("#notes").value.trim().split(/\s+/).filter(Boolean).length; $("#count").textContent = n + (n===1?" word":" words"); }
+$("#notes").addEventListener("input", updateCount);
+$("#sampleBtn").onclick = () => { $("#cust").value=SAMPLE.cust; $("#industry").value=SAMPLE.industry; $("#notes").value=SAMPLE.notes; updateCount(); };
+$("#importBtn").onclick = () => $("#file").click();
+$("#file").onchange = async e => {
+  const files=[...e.target.files]; if(!files.length) return;
+  const parts = await Promise.all(files.map(f => f.text().then(t => `--- ${f.name} ---\n${t}`)));
+  const box=$("#notes"); box.value = (box.value.trim() ? box.value.trim()+"\n\n" : "") + parts.join("\n\n");
+  updateCount(); e.target.value=""; toast(files.length+" file"+(files.length>1?"s":"")+" added");
+};
+
+function buildPrompt(){
+  const cust=$("#cust").value.trim()||"the customer", ind=$("#industry").value.trim()||"not stated";
+  return `You are a senior B2B account strategist. Analyse the customer material below and produce a ${$("#focus").value} for the seller's team.
+
+SELLER'S OFFERING:
+${$("#seller").value.trim() || "Not provided."}
+
+CUSTOMER: ${cust}
+INDUSTRY: ${ind}
+FOCUS: ${$("#focus").value}
+
+CUSTOMER MATERIAL:
+"""
+${$("#notes").value.trim()}
+"""
+
+Rules:
+- Ground everything in the material. "evidence" must be a short verbatim excerpt (under 20 words) copied from the material; use "" if none exists.
+- Do not invent people, numbers or facts. If something is unclear, put it in "gaps".
+- Opportunities must map to the seller's offering where possible.
+- Next actions: concrete, ordered by priority, at most 6.
+- Be specific and plain-spoken; no filler.
+
+Reply with ONLY a JSON object, no markdown, in exactly this shape:
+{"summary":"2-3 sentence read on the account",
+"health":{"score":0-100,"label":"Healthy|Watch|At risk","reason":"one sentence"},
+"sentiment":{"score":-100 to 100,"label":"short word or phrase","trend":"improving|stable|declining|unclear"},
+"painPoints":[{"title":"","detail":"","severity":"high|medium|low","evidence":""}],
+"goals":[{"title":"","detail":""}],
+"buyingSignals":[{"signal":"","evidence":""}],
+"risks":[{"title":"","detail":"","severity":"high|medium|low","evidence":""}],
+"stakeholders":[{"name":"","role":"","stance":"champion|supporter|neutral|skeptic|blocker|unknown","notes":""}],
+"opportunities":[{"title":"","detail":"","fit":"strong|moderate|exploratory"}],
+"nextActions":[{"action":"","owner":"","timing":"","why":""}],
+"talkingPoints":[""],
+"questions":[""],
+"gaps":[""]}`;
+}
+
+function errCopy(code){
+  return ({not_granted:"Insight generation needs your permission to use Claude. Reload the page and allow it to try again.",
+    rate_limited:"Too many requests just now. Wait a minute, then generate again.",
+    cancelled:"Stopped.", too_large:"That's more material than fits in one pass. Trim it to the most relevant notes and try again."})[code]
+    || "The analysis didn't come back in a usable form. Generate again, or shorten the material.";
+}
+
+async function run(){
+  if(!$("#notes").value.trim()){ toast("Add some customer material first"); $("#notes").focus(); return; }
+  if(!sample){ renderErr("Insight generation isn't available in this view. Open the page in Claude to use it."); return; }
+  const meta = {customer:$("#cust").value.trim()||"Unnamed customer", industry:$("#industry").value.trim(), focus:$("#focus").selectedOptions[0].textContent};
+  $("#runBtn").disabled=true; $("#stopBtn").hidden=false;
+  const start=Date.now();
+  $("#report").innerHTML = `<div class="status"><span class="pulse" aria-hidden="true"></span><div><b>Reading the material…</b><div class="note" id="elapsed">This usually takes 20–60 seconds.</div></div></div>`;
+  const tick=setInterval(()=>{ const el=$("#elapsed"); if(el) el.textContent=`${Math.round((Date.now()-start)/1000)}s · pulling out pains, risks and signals`; },1000);
+  ctl = new AbortController();
+  try{
+    const res = await sample.json(buildPrompt(), {signal:ctl.signal, modelTier:"default"});
+    if(!res || typeof res!=="object") throw {code:"bad_output"};
+    current = {...meta, createdAt:Date.now(), result:res};
+    render(current);
+    save(current);
+  }catch(e){
+    renderErr(errCopy(e && e.code));
+  }finally{
+    clearInterval(tick); $("#runBtn").disabled=false; $("#stopBtn").hidden=true;
+  }
+}
+$("#runBtn").onclick = run;
+$("#stopBtn").onclick = () => ctl?.abort();
+
+function renderErr(msg){ $("#report").innerHTML = `<div class="err">${esc(msg)}</div>`; }
+
+function ring(score){
+  const s=Math.max(0,Math.min(100,+score||0)), r=50, c=2*Math.PI*r;
+  const col = s>=70?"var(--good)":s>=45?"var(--warn)":"var(--bad)";
+  return `<div class="ring" role="img" aria-label="Account health ${s} out of 100"><svg width="118" height="118" viewBox="0 0 118 118">
+  <circle cx="59" cy="59" r="${r}" fill="none" stroke="var(--line)" stroke-width="10"/>
+  <circle cx="59" cy="59" r="${r}" fill="none" stroke="${col}" stroke-width="10" stroke-linecap="round" stroke-dasharray="${c*s/100} ${c}"/></svg>
+  <div class="num"><b>${s}</b><span>health</span></div></div>`;
+}
+const ev = t => t ? `<div class="evline"><span class="ev">“${esc(t)}”</span></div>` : "";
+const tag = (v) => v ? `<span class="tag ${esc(String(v).toLowerCase())}">${esc(v)}</span>` : "";
+function sec(title, sub, body){ return body ? `<section class="sec"><h3>${esc(title)}${sub?`<small>${esc(sub)}</small>`:""}</h3><div class="items">${body}</div></section>` : ""; }
+
+function render(rec){
+  const r=rec.result, h=r.health||{}, s=r.sentiment||{};
+  const sv=Math.max(-100,Math.min(100,+s.score||0));
+  const sevOrder={high:0,medium:1,low:2};
+  const bySev = a => arr(a).slice().sort((x,y)=>(sevOrder[x.severity]??3)-(sevOrder[y.severity]??3));
+  const d=new Date(rec.createdAt);
+  let html = `<article class="dossier">
+  <header class="head"><div>
+    <h2>${esc(rec.customer)}</h2>
+    <p class="meta">${esc([rec.industry, rec.focus, d.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})].filter(Boolean).join("  ·  "))}</p>
+    <p class="summary">${esc(r.summary)}</p>
+  </div>
+  <div class="gauge">${ring(h.score)}
+    <div class="sent"><div class="lbl">Health</div><div class="val">${esc(h.label||"—")}</div>
+      <div class="lbl" style="margin-top:10px">Sentiment${s.trend&&s.trend!=="unclear"?", "+esc(s.trend):""}</div><div class="val">${esc(s.label||"—")}</div>
+      <div class="track" aria-hidden="true"><i style="left:${(sv+100)/2}%"></i></div>
+    </div></div>
+  </header>
+  <div class="toolbar">
+    <button class="btn btn-ghost" id="mdBtn" type="button">Download as Markdown</button>
+    <button class="btn btn-ghost" id="copyBtn" type="button">Copy summary</button>
+  </div>`;
+  if(h.reason) html += sec("Why this score","",`<div class="item"><p style="color:var(--ink)">${esc(h.reason)}</p></div>`);
+  html += sec("Next moves","In priority order", arr(r.nextActions).length ? `<ol class="steps">${arr(r.nextActions).map(a=>`<li><div class="item"><div class="t">${esc(a.action)}</div>${a.owner||a.timing?`<div class="when">${esc([a.owner,a.timing].filter(Boolean).join(", "))}</div>`:""}<p>${esc(a.why)}</p></div></li>`).join("")}</ol>` : "");
+  html += sec("Pain points","What's hurting them", bySev(r.painPoints).map(p=>`<div class="item"><div class="t">${esc(p.title)} ${tag(p.severity)}</div><p>${esc(p.detail)}</p>${ev(p.evidence)}</div>`).join(""));
+  html += sec("Risks","Churn, deal or delivery", bySev(r.risks).map(p=>`<div class="item"><div class="t">${esc(p.title)} ${tag(p.severity)}</div><p>${esc(p.detail)}</p>${ev(p.evidence)}</div>`).join(""));
+  html += sec("Buying signals","", arr(r.buyingSignals).map(b=>`<div class="item"><div class="t">${esc(b.signal)}</div>${ev(b.evidence)}</div>`).join(""));
+  html += sec("Opportunities","Where you can help", arr(r.opportunities).map(o=>`<div class="item"><div class="t">${esc(o.title)} ${tag(o.fit)}</div><p>${esc(o.detail)}</p></div>`).join(""));
+  html += sec("Their goals","", arr(r.goals).map(g=>`<div class="item"><div class="t">${esc(g.title)}</div><p>${esc(g.detail)}</p></div>`).join(""));
+  html += sec("People","Who matters and where they stand", arr(r.stakeholders).length ? `<div class="people">${arr(r.stakeholders).map(p=>`<div class="person"><div class="nm">${esc(p.name)}</div><div class="rl">${esc(p.role)}</div><div style="margin-top:6px">${tag(p.stance)}</div>${p.notes?`<p>${esc(p.notes)}</p>`:""}</div>`).join("")}</div>` : "");
+  html += sec("Talking points","", arr(r.talkingPoints).length ? `<ul class="plain">${arr(r.talkingPoints).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>` : "");
+  html += sec("Ask next","Questions to close the gaps", arr(r.questions).length ? `<ul class="plain">${arr(r.questions).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>` : "");
+  html += sec("Missing info","Not in the material", arr(r.gaps).length ? `<ul class="plain">${arr(r.gaps).map(t=>`<li>${esc(t)}</li>`).join("")}</ul>` : "");
+  html += `</article><p class="note">Generated by Claude from the material you provided. Check highlighted evidence before acting on it.</p>`;
+  $("#report").innerHTML = html;
+  $("#mdBtn").onclick = () => exportMd(rec);
+  $("#copyBtn").onclick = async () => { try{ await navigator.clipboard.writeText(toMd(rec)); toast("Copied to clipboard"); }catch{ toast("Copy isn't allowed here. Use Download instead."); } };
+  if(!downloads) $("#mdBtn").hidden = true;
+  if(innerWidth<960) $("#report").scrollIntoView({behavior:"smooth"});
+}
+
+function toMd(rec){
+  const r=rec.result, L=[];
+  L.push(`# ${rec.customer}: customer insights`, `${[rec.industry,rec.focus,new Date(rec.createdAt).toLocaleDateString()].filter(Boolean).join(" | ")}`, "", r.summary||"", "",
+    `**Health:** ${r.health?.score ?? "–"}/100 (${r.health?.label||"–"}). ${r.health?.reason||""}`, `**Sentiment:** ${r.sentiment?.label||"–"} (${r.sentiment?.trend||"unclear"})`, "");
+  const list=(title, items, fn)=>{ if(arr(items).length){ L.push(`## ${title}`); arr(items).forEach((x,i)=>L.push(fn(x,i))); L.push(""); } };
+  list("Next moves", r.nextActions, (a,i)=>`${i+1}. **${a.action}**${a.owner||a.timing?` (${[a.owner,a.timing].filter(Boolean).join(", ")})`:""}: ${a.why||""}`);
+  list("Pain points", r.painPoints, p=>`- **${p.title}** [${p.severity}]: ${p.detail}${p.evidence?`\n  > "${p.evidence}"`:""}`);
+  list("Risks", r.risks, p=>`- **${p.title}** [${p.severity}]: ${p.detail}${p.evidence?`\n  > "${p.evidence}"`:""}`);
+  list("Buying signals", r.buyingSignals, b=>`- ${b.signal}${b.evidence?` ("${b.evidence}")`:""}`);
+  list("Opportunities", r.opportunities, o=>`- **${o.title}** [${o.fit}]: ${o.detail}`);
+  list("Goals", r.goals, g=>`- **${g.title}**: ${g.detail}`);
+  list("People", r.stakeholders, p=>`- **${p.name}**, ${p.role} [${p.stance}]${p.notes?`: ${p.notes}`:""}`);
+  list("Talking points", r.talkingPoints, t=>`- ${t}`);
+  list("Questions to ask", r.questions, t=>`- ${t}`);
+  list("Missing info", r.gaps, t=>`- ${t}`);
+  return L.join("\n");
+}
+async function exportMd(rec){
+  if(!downloads) return;
+  const name = (rec.customer||"customer").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") + "-insights.md";
+  try{ const r = await downloads.save({filename:name, data:toMd(rec)}); if(r.status==="saved") toast("Saved "+name); }
+  catch(e){ if(e?.code!=="cancelled") toast("Download didn't complete."); }
+}
+
+/* Saved history (private to each viewer) */
+let history=[];
+function renderHistory(){
+  const box=$("#historyBox"), ul=$("#historyList"); box.hidden=false;
+  if(!history.length){ ul.innerHTML = `<li class="empty">Insights you generate are saved here, visible only to you.</li>`; return; }
+  ul.innerHTML = history.map((h,i)=>`<li><button type="button" data-i="${i}"><span>${esc(h.customer)}</span><small>${esc(new Date(h.createdAt).toLocaleDateString(undefined,{day:"numeric",month:"short"}))}</small></button></li>`).join("");
+  ul.querySelectorAll("button").forEach(b=>b.onclick=()=>{ current=history[+b.dataset.i]; render(current); });
+}
+async function save(rec){
+  if(!db||!userId) return;
+  try{ await db.collection("data/users/"+userId).add({customer:rec.customer, industry:rec.industry, focus:rec.focus, createdAt:rec.createdAt, result:rec.result}); }
+  catch(e){ toast(e?.code==="quota_exceeded" ? "Saved-insights storage is full." : "Couldn't save this one to your history."); }
+}
+
+(async () => {
+  const c = window.claude; if(!c) return;
+  c.use("sample").then(s => { sample = s; });
+  c.use("downloads").then(d => { downloads = d; const b=$("#mdBtn"); if(b && d) b.hidden=false; });
+  const [d, u] = await Promise.all([c.use("db"), c.use("user")]);
+  if(!d || !u) return;
+  try{ userId = await u.id(); }catch{}
+  if(!userId) return;
+  db = d;
+  renderHistory();
+  db.collection("data/users/"+userId).orderBy("createdAt","desc").limit(25).onSnapshot(
+    snap => { history = snap.docs.map(x=>x.data()); renderHistory(); },
+    () => {}
+  );
+})();
+</script>
+</body>
+</html>
